@@ -348,18 +348,44 @@ def handle_widget(args):
     workspace = Path(args.workspace).resolve()
     print(f"🧠 [SMART LLM] Initializing Native macOS Desktop Widget...")
     
-    swift_bin = workspace / "smart-llm-out" / "SMART_LLM_Widget"
-    if swift_bin.exists():
+    # 1. Primary: True native Apple-recommended WidgetKit extension application
+    app_path = workspace / "smart-llm-out" / "SmartLLM.app"
+    user_app_path = Path.home() / "Applications" / "SmartLLM.app"
+    target_app = user_app_path if user_app_path.exists() else app_path
+    
+    if target_app.exists():
         import subprocess
-        print(f"🍏 Starting Apple-recommended Native Cocoa Widget App...")
+        print(f"🍏 Starting Apple-recommended Native SwiftUI Widget Hub App...")
         try:
-            # Run the compiled native Swift app in background
-            subprocess.Popen([str(swift_bin)])
-            print("🚀 Native macOS Widget is now running on your desktop. Drag it anywhere!")
+            # Launch the compiled SwiftUI main app bundle
+            subprocess.Popen(["open", str(target_app)])
+            print("-" * 65)
+            print("🚀 Native macOS SwiftUI Widget Hub has been launched successfully!")
+            print("💡 How to add the SMART LLM Widget to your Desktop:")
+            print("   1. Right-click anywhere on your Desktop, select 'Edit Widgets...'")
+            print("      (Or click the date/time in the Menu Bar -> 'Edit Widgets' at bottom)")
+            print("   2. Search for 'SMART LLM' in the Widget Gallery.")
+            print("   3. Drag the small or medium widget onto your Desktop!")
+            print("-" * 65)
             return
         except Exception as e:
-            print(f"⚠️ Failed to launch native Swift binary: {e}. Falling back to Tkinter...")
+            print(f"⚠️ Failed to launch native SwiftUI bundle: {e}. Trying legacy floating app...")
+
+    # 2. Secondary: Legacy floating Cocoa WebView widget app fallback
+    project_root = Path(__file__).resolve().parent.parent.parent
+    swift_bin = project_root / "smart-llm-out" / "SMART_LLM_Widget"
+    
+    if swift_bin.exists():
+        import subprocess
+        print(f"🍏 Starting Legacy Native Cocoa Floating WebView Widget...")
+        try:
+            subprocess.Popen([str(swift_bin)])
+            print("🚀 Floating macOS Widget is now running on your desktop. Drag it anywhere!")
+            return
+        except Exception as e:
+            print(f"⚠️ Failed to launch legacy Cocoa binary: {e}. Falling back to Tkinter...")
             
+    # 3. Tertiary: Cross-platform Tkinter fallback
     print(f"💡 Double-click the widget to close it safely. Drag it anywhere!")
     from smart_llm.widget_app import start_widget_app
     try:

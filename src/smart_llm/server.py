@@ -75,6 +75,44 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._send_json({"lessons": lessons})
             return
 
+        # 3b. API: Widget Stats Consolidated Endpoint for WidgetKit
+        elif path == "/api/widget_stats":
+            try:
+                # Count files
+                total_files = 0
+                index_file = self.workspace_path / "smart-llm-out" / "index.json"
+                if index_file.exists():
+                    try:
+                        with open(index_file, "r", encoding="utf-8") as f:
+                            index_data = json.load(f)
+                            total_files = len(index_data.get("doc_map", {}))
+                    except Exception:
+                        pass
+                
+                # Fetch alerts
+                from smart_llm.sqlite_ledger import get_active_alerts
+                alerts = get_active_alerts(self.workspace_path, limit=1)
+                alerts_count = len(get_active_alerts(self.workspace_path, limit=100)) # Count total recent alerts
+                
+                active_alert = "None"
+                if alerts:
+                    alert = alerts[0]
+                    # Format standard alert details
+                    details = alert.get("details", {})
+                    symbol = details.get("symbol", "")
+                    error_type = alert.get("alert_type", "Warning")
+                    active_alert = f"[{error_type}] {symbol}: {details.get('guideline', 'Violation detected')}"
+                
+                self._send_json({
+                    "total_files": total_files,
+                    "alerts_count": alerts_count,
+                    "active_alert": active_alert
+                })
+            except Exception as e:
+                self._send_json({"error": f"Failed to load widget stats: {e}"}, 500)
+            return
+
+
         # 4. GUI: Serve Embedded Premium Dashboard HTML/CSS/JS page
         elif path == "/" or path == "/index.html":
             self.send_response(200)
