@@ -343,6 +343,19 @@ def handle_dashboard(args):
         httpd.server_close()
 
 
+def handle_widget(args):
+    """Command handler for 'widget' (Starts the floating Tkinter macOS desktop widget)."""
+    workspace = Path(args.workspace).resolve()
+    print(f"🧠 [SMART LLM] Initializing Native macOS Desktop Widget...")
+    print(f"💡 Double-click the widget to close it safely. Drag it anywhere!")
+    from smart_llm.widget_app import start_widget_app
+    try:
+        start_widget_app(workspace)
+    except Exception as e:
+        print(f"❌ Error starting native widget app: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(description="SMART LLM: Semantic Memory & Architecture Retrieval Tool")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -390,6 +403,10 @@ def main():
     dashboard_parser.add_argument("--port", default="8000", help="Port to run the dashboard server on")
     dashboard_parser.add_argument("--workspace", default=".", help="Path to project workspace")
 
+    # Widget command
+    widget_parser = subparsers.add_parser("widget", help="Start the native macOS floating desktop widget")
+    widget_parser.add_argument("--workspace", default=".", help="Path to project workspace")
+
     args = parser.parse_args()
 
     if args.command == "ingest":
@@ -410,6 +427,8 @@ def main():
         handle_verify(args)
     elif args.command == "dashboard":
         handle_dashboard(args)
+    elif args.command == "widget":
+        handle_widget(args)
 
 if __name__ == "__main__":
     main()

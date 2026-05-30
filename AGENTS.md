@@ -11,6 +11,11 @@
 - **오류 호출**: `src/smart_llm/sync.py` (L53에서 3개 인자로 호출함)
 - **조치 가이드**: 에이전트는 두 모듈의 파라미터 규격을 일치시키고 인터페이스 깨짐(Breaking Changes)을 방어하십시오.
 
+### 🛑 Contract Violation: `run`
+- **정의 파일**: `src/smart_llm/widget_app.py` (매개변수 요구량: 0~0개)
+- **오류 호출**: `src/smart_llm/git_diff.py` (L20에서 5개 인자로 호출함)
+- **조치 가이드**: 에이전트는 두 모듈의 파라미터 규격을 일치시키고 인터페이스 깨짐(Breaking Changes)을 방어하십시오.
+
 ### 🛑 Contract Violation: `search`
 - **정의 파일**: `src/smart_llm/query.py` (매개변수 요구량: 1~2개)
 - **오류 호출**: `src/smart_llm/learn.py` (L74에서 3개 인자로 호출함)
@@ -32,7 +37,7 @@
 - **조치 가이드**: 에이전트는 두 모듈의 파라미터 규격을 일치시키고 인터페이스 깨짐(Breaking Changes)을 방어하십시오.
 
 ### 🛑 Contract Violation: `__init__`
-- **정의 파일**: `src/smart_llm/watcher.py` (매개변수 요구량: 1~1개)
+- **정의 파일**: `src/smart_llm/widget_app.py` (매개변수 요구량: 1~1개)
 - **오류 호출**: `src/smart_llm/watcher.py` (L75에서 0개 인자로 호출함)
 - **조치 가이드**: 에이전트는 두 모듈의 파라미터 규격을 일치시키고 인터페이스 깨짐(Breaking Changes)을 방어하십시오.
 
@@ -46,7 +51,7 @@
 - **해결 전략**: **Use GPIO_MODER_MODER5_0 instead of raw 0x01 shift on Pin A5**
 
 ## 🧠 SMART LLM — Workspace Cognitive Architecture Map
-*Memorized: 143 code entities, 22 documentation nodes, and 0 relationship boundaries.*
+*Memorized: 153 code entities, 23 documentation nodes, and 0 relationship boundaries.*
 
 ### 🏛️ Cohesive Architecture Communities (GraphRAG Synopsis)
 안티그라비티 에이전트들은 다음 구조적 단위(Cohesive Communities)를 기준으로 코드를 탐색하고 작업하십시오.
