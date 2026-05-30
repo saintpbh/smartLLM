@@ -50,14 +50,26 @@ echo "⚡ Step 4: Writing Info.plist configuration metadata..."
 cp "$SRC_DIR/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
 cp "$SRC_DIR/Info-Widget.plist" "$APP_BUNDLE/Contents/PlugIns/SmartLLMWidgetExtension.appex/Contents/Info.plist"
 
-# 5. Codesign the entire bundle (Required for Apple Silicon and modern macOS)
-echo "⚡ Step 5: Performing secure ad-hoc codesigning..."
-codesign --force --sign - --options runtime "$APP_BUNDLE/Contents/PlugIns/SmartLLMWidgetExtension.appex"
-codesign --force --sign - --options runtime "$APP_BUNDLE"
+# 5. Codesign the entire bundle with Sandbox entitlements (Mandatory for WidgetKit)
+echo "⚡ Step 5: Performing secure codesigning with Sandbox entitlements..."
+codesign --force --sign - --entitlements "$SRC_DIR/Widget.entitlements" --options runtime "$APP_BUNDLE/Contents/PlugIns/SmartLLMWidgetExtension.appex"
+codesign --force --sign - --entitlements "$SRC_DIR/App.entitlements" --options runtime "$APP_BUNDLE"
 
-# 6. PlugInKit registration
-echo "⚡ Step 6: Registering WidgetKit Extension in macOS System Services..."
-pluginkit -a "$APP_BUNDLE/Contents/PlugIns/SmartLLMWidgetExtension.appex"
+# 6. Deploy to system Applications and User Applications
+echo "⚡ Step 6: Deploying SmartLLM.app to System and User Applications directories..."
+mkdir -p ~/Applications
+rm -rf ~/Applications/SmartLLM.app
+cp -R "$APP_BUNDLE" ~/Applications/
 
-echo "🚀 [SMART LLM] Build complete! Native macOS Widget App Bundle packaged successfully."
-echo "📂 Location: $APP_BUNDLE"
+# Copy to system /Applications if possible (for maximum reliability of WidgetKit scan)
+rm -rf /Applications/SmartLLM.app
+cp -R "$APP_BUNDLE" /Applications/ || echo "⚠️ Could not write to system /Applications, using user applications."
+
+# 7. PlugInKit registration
+echo "⚡ Step 7: Registering WidgetKit Extension in macOS System Services..."
+pluginkit -a ~/Applications/SmartLLM.app/Contents/PlugIns/SmartLLMWidgetExtension.appex
+pluginkit -a /Applications/SmartLLM.app/Contents/PlugIns/SmartLLMWidgetExtension.appex || true
+
+echo "🚀 [SMART LLM] Build and Deployment complete! Native macOS Widget App Bundle registered successfully."
+echo "📂 System Location: /Applications/SmartLLM.app"
+echo "📂 User Location: ~/Applications/SmartLLM.app"
