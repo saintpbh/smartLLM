@@ -64,4 +64,6 @@ targets:
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
-        com.apple.security.files.home-directory.read-only: true
+        com.apple.security.temporary-exception.files.absolute-path.read-only:
+          - /Users/bongpark/Library/Group Containers/
+          - /tmp/smartllm/

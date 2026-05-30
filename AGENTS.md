@@ -38,7 +38,7 @@
 
 ### 🛑 Contract Violation: `__init__`
 - **정의 파일**: `src/smart_llm/widget_app.py` (매개변수 요구량: 1~1개)
-- **오류 호출**: `src/smart_llm/watcher.py` (L75에서 0개 인자로 호출함)
+- **오류 호출**: `src/smart_llm/watcher.py` (L83에서 0개 인자로 호출함)
 - **조치 가이드**: 에이전트는 두 모듈의 파라미터 규격을 일치시키고 인터페이스 깨짐(Breaking Changes)을 방어하십시오.
 
 
@@ -61,7 +61,7 @@
 - **해결 전략**: **Use GPIO_MODER_MODER5_0 instead of raw 0x01 shift on Pin A5**
 
 ## 🧠 SMART LLM — Workspace Cognitive Architecture Map
-*Memorized: 153 code entities, 33 documentation nodes, and 0 relationship boundaries.*
+*Memorized: 155 code entities, 33 documentation nodes, and 0 relationship boundaries.*
 
 ### 🏛️ Cohesive Architecture Communities (GraphRAG Synopsis)
 안티그라비티 에이전트들은 다음 구조적 단위(Cohesive Communities)를 기준으로 코드를 탐색하고 작업하십시오.

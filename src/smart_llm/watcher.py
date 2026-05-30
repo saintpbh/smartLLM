@@ -62,6 +62,14 @@ class DebouncedIndexScheduler:
             sync_args = MockArgs(workspace=str(self.workspace_path))
             handle_sync_agents(sync_args)
             
+            # Widget 데이터 자동 동기화 (App Group 컨테이너)
+            try:
+                from smart_llm.widget_sync import sync_widget_data
+                sync_widget_data(str(self.workspace_path))
+                print("📡 [Zero-CPU Watcher] Widget data synced to App Group container.")
+            except Exception as widget_err:
+                print(f"⚠️ [Zero-CPU Watcher] Widget sync skipped: {widget_err}")
+            
             print("🚀 [Zero-CPU Watcher] Background Sync Complete. Memory rules updated.\n")
         except Exception as e:
             print(f"❌ [Zero-CPU Watcher] Background compile error: {e}", file=sys.stderr)
