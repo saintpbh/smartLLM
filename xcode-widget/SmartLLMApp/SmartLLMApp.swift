@@ -2,7 +2,96 @@ import SwiftUI
 import AppKit
 import WidgetKit
 
-// MARK: - Shared Codable (Widget과 동일 구조)
+// MARK: - 내장 HTTP 서버 (위젯 데이터 제공)
+// 샌드박스 위젯이 파일을 직접 읽을 수 없으므로 localhost HTTP로 제공
+class WidgetDataServer {
+    static let shared = WidgetDataServer()
+    private let port: UInt16 = 18923
+    private var serverSocket: Int32 = -1
+    private let acceptQueue = DispatchQueue(label: "widget-http-accept", qos: .background)
+    private let clientQueue = DispatchQueue(label: "widget-http-client", qos: .utility, attributes: .concurrent)
+    private var jsonPath: String = ""
+
+    func start(servingPath: String) {
+        jsonPath = servingPath
+        acceptQueue.async { [self] in
+            serverSocket = socket(AF_INET, SOCK_STREAM, 0)
+            guard serverSocket >= 0 else { return }
+
+            var yes: Int32 = 1
+            setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &yes, socklen_t(MemoryLayout<Int32>.size))
+            setsockopt(serverSocket, SOL_SOCKET, SO_REUSEPORT, &yes, socklen_t(MemoryLayout<Int32>.size))
+
+            var addr = sockaddr_in()
+            addr.sin_family = sa_family_t(AF_INET)
+            addr.sin_port = port.bigEndian
+            addr.sin_addr.s_addr = UInt32(0x7f000001).bigEndian
+
+            let bindResult = withUnsafePointer(to: &addr) { ptr in
+                ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                    Darwin.bind(serverSocket, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+                }
+            }
+            guard bindResult == 0 else {
+                print("⚠️ HTTP server bind failed on port \(port)")
+                return
+            }
+
+            Darwin.listen(serverSocket, 10)
+            print("📡 Widget HTTP server running on http://localhost:\(port)/")
+
+            while serverSocket >= 0 {
+                let client = Darwin.accept(serverSocket, nil, nil)
+                if client < 0 { continue }
+
+                // 별도 concurrent queue에서 클라이언트 처리
+                let path = jsonPath
+                clientQueue.async {
+                    Self.handleClient(client, jsonPath: path)
+                }
+            }
+        }
+    }
+
+    private static func handleClient(_ client: Int32, jsonPath: String) {
+        // Read request (최대 2KB)
+        var buffer = [UInt8](repeating: 0, count: 2048)
+        let bytesRead = Darwin.recv(client, &buffer, buffer.count, 0)
+        guard bytesRead > 0 else {
+            Darwin.close(client)
+            return
+        }
+
+        // Serve JSON
+        let body: Data
+        if let data = try? Data(contentsOf: URL(fileURLWithPath: jsonPath)) {
+            body = data
+        } else {
+            body = "{\"totalFiles\":0,\"totalLessons\":0,\"newLessonsCount\":0,\"lessons\":[],\"lastUpdated\":0}".data(using: .utf8)!
+        }
+
+        let header = "HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: \(body.count)\r\nConnection: close\r\n\r\n"
+
+        // Send header + body
+        if let headerData = header.data(using: .utf8) {
+            headerData.withUnsafeBytes { ptr in
+                _ = Darwin.send(client, ptr.baseAddress!, headerData.count, 0)
+            }
+        }
+        body.withUnsafeBytes { ptr in
+            _ = Darwin.send(client, ptr.baseAddress!, body.count, 0)
+        }
+
+        // Graceful shutdown
+        Darwin.shutdown(client, SHUT_WR)
+        Darwin.close(client)
+    }
+}
+
+
+// MARK: - 위젯 데이터 생성 + JSON 저장
+private let kGroupID = "group.com.bongpark.SmartLLM"
+
 struct WidgetLessonSync: Codable {
     let filename: String
     let title: String
@@ -18,8 +107,11 @@ struct WidgetSyncPayload: Codable {
     let lastUpdated: Double
 }
 
-// MARK: - App Group Container에 데이터 동기화
-private let kGroupID = "group.com.bongpark.SmartLLM"
+func getWidgetDataPath() -> String {
+    let groupDir = NSHomeDirectory() + "/Library/Group Containers/\(kGroupID)"
+    try? FileManager.default.createDirectory(atPath: groupDir, withIntermediateDirectories: true)
+    return groupDir + "/widget_data.json"
+}
 
 func syncDataToWidget() {
     let home = NSHomeDirectory()
@@ -27,10 +119,8 @@ func syncDataToWidget() {
     let lessonsDir = workspacePath + "/lessons"
     let indexPath = workspacePath + "/smart-llm-out/index.json"
     let lastSeenPath = workspacePath + "/.widget_last_seen"
-
     let fm = FileManager.default
 
-    // 1. 파일 수 읽기
     var totalFiles = 0
     if let data = try? Data(contentsOf: URL(fileURLWithPath: indexPath)),
        let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -38,7 +128,6 @@ func syncDataToWidget() {
         totalFiles = docMap.count
     }
 
-    // 2. Lessons 읽기
     var lessons: [WidgetLessonSync] = []
     if let files = try? fm.contentsOfDirectory(atPath: lessonsDir) {
         for file in files where file.hasSuffix(".md") {
@@ -57,9 +146,7 @@ func syncDataToWidget() {
             for line in content.components(separatedBy: .newlines) {
                 if line.contains("Context/Tags") {
                     tags = line.components(separatedBy: "`")
-                        .enumerated()
-                        .filter { $0.offset % 2 == 1 }
-                        .map { $0.element }
+                        .enumerated().filter { $0.offset % 2 == 1 }.map { $0.element }
                     break
                 }
             }
@@ -72,38 +159,29 @@ func syncDataToWidget() {
     }
     lessons.sort { $0.timestamp > $1.timestamp }
 
-    // 3. Last Seen
     var lastSeen: Double = 0
-    if let content = try? String(contentsOfFile: lastSeenPath, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines),
-       let ts = Double(content) {
+    if let content = try? String(contentsOfFile: lastSeenPath, encoding: .utf8)
+        .trimmingCharacters(in: .whitespacesAndNewlines), let ts = Double(content) {
         lastSeen = ts
     }
-    let newCount = lessons.filter { $0.timestamp > lastSeen }.count
 
-    // 4. JSON 생성
     let payload = WidgetSyncPayload(
         totalFiles: totalFiles,
         totalLessons: lessons.count,
-        newLessonsCount: newCount,
+        newLessonsCount: lessons.filter { $0.timestamp > lastSeen }.count,
         lessons: lessons,
         lastUpdated: Date().timeIntervalSince1970
     )
 
-    // 5. App Group 컨테이너에 쓰기
-    let groupDir = home + "/Library/Group Containers/\(kGroupID)"
-    try? fm.createDirectory(atPath: groupDir, withIntermediateDirectories: true)
-    let dataPath = groupDir + "/widget_data.json"
-
+    let dataPath = getWidgetDataPath()
     if let jsonData = try? JSONEncoder().encode(payload) {
         try? jsonData.write(to: URL(fileURLWithPath: dataPath))
-        print("📡 Widget data synced to: \(dataPath)")
     }
 
-    // 6. Widget 타임라인 즉시 갱신
     WidgetCenter.shared.reloadAllTimelines()
 }
 
-// MARK: - Lesson Model for App UI
+// MARK: - Lesson Model (UI)
 struct AppLessonInfo: Identifiable {
     var id: String { filename }
     let filename: String
@@ -115,7 +193,6 @@ struct AppLessonInfo: Identifiable {
     let isNew: Bool
 }
 
-// MARK: - Knowledge Store
 class KnowledgeStore: ObservableObject {
     @Published var lessons: [AppLessonInfo] = []
     @Published var newCount: Int = 0
@@ -130,44 +207,37 @@ class KnowledgeStore: ObservableObject {
 
         guard let files = try? fm.contentsOfDirectory(atPath: lessonsDir) else { return }
 
-        lessons = files
-            .filter { $0.hasSuffix(".md") }
-            .compactMap { filename -> AppLessonInfo? in
-                let path = lessonsDir + "/" + filename
-                guard let attrs = try? fm.attributesOfItem(atPath: path),
-                      let modDate = attrs[.modificationDate] as? Date,
-                      let content = try? String(contentsOfFile: path, encoding: .utf8) else { return nil }
+        lessons = files.filter { $0.hasSuffix(".md") }.compactMap { filename -> AppLessonInfo? in
+            let path = lessonsDir + "/" + filename
+            guard let attrs = try? fm.attributesOfItem(atPath: path),
+                  let modDate = attrs[.modificationDate] as? Date,
+                  let content = try? String(contentsOfFile: path, encoding: .utf8) else { return nil }
 
-                let title = parseSectionAfter("# Lesson Learned: ", in: content)
-                    ?? filename.replacingOccurrences(of: ".md", with: "")
-                let tags = parseTags(from: content)
-                let errorText = parseSectionAfter("## 🛑 Resolved Error\n", in: content) ?? ""
-                let resolution = parseSectionAfter("## 💡 Successful Resolution\n", in: content) ?? ""
+            let title = parseSectionAfter("# Lesson Learned: ", in: content)
+                ?? filename.replacingOccurrences(of: ".md", with: "")
+            let tags = parseTags(from: content)
+            let errorText = parseSectionAfter("## 🛑 Resolved Error\n", in: content) ?? ""
+            let resolution = parseSectionAfter("## 💡 Successful Resolution\n", in: content) ?? ""
 
-                return AppLessonInfo(
-                    filename: filename, title: title, date: modDate, tags: tags,
-                    errorText: errorText, resolutionText: resolution,
-                    isNew: modDate > lastSeen
-                )
-            }
-            .sorted { $0.date > $1.date }
+            return AppLessonInfo(
+                filename: filename, title: title, date: modDate, tags: tags,
+                errorText: errorText, resolutionText: resolution, isNew: modDate > lastSeen
+            )
+        }.sorted { $0.date > $1.date }
 
         newCount = lessons.filter { $0.isNew }.count
-        
-        // 데이터 로드 후 위젯에 동기화
         syncDataToWidget()
     }
 
     func markAllAsRead() {
         let ts = String(Date().timeIntervalSince1970)
         try? ts.write(toFile: lastSeenPath, atomically: true, encoding: .utf8)
-        load() // reload + re-sync to widget
+        load()
     }
 
     private func readLastSeen() -> Date {
         guard let content = try? String(contentsOfFile: lastSeenPath, encoding: .utf8)
-                .trimmingCharacters(in: .whitespacesAndNewlines),
-              let ts = Double(content) else {
+                .trimmingCharacters(in: .whitespacesAndNewlines), let ts = Double(content) else {
             return Date.distantPast
         }
         return Date(timeIntervalSince1970: ts)
@@ -175,33 +245,27 @@ class KnowledgeStore: ObservableObject {
 
     private func parseSectionAfter(_ marker: String, in content: String) -> String? {
         guard let range = content.range(of: marker) else { return nil }
-        let rest = content[range.upperBound...]
-        let line = rest.components(separatedBy: "\n").first?.trimmingCharacters(in: .whitespaces)
+        let line = content[range.upperBound...].components(separatedBy: "\n").first?.trimmingCharacters(in: .whitespaces)
         return line?.isEmpty == true ? nil : line
     }
 
     private func parseTags(from content: String) -> [String] {
         for line in content.components(separatedBy: .newlines) {
             if line.contains("Context/Tags") {
-                return line.components(separatedBy: "`")
-                    .enumerated()
-                    .filter { $0.offset % 2 == 1 }
-                    .map { $0.element }
+                return line.components(separatedBy: "`").enumerated().filter { $0.offset % 2 == 1 }.map { $0.element }
             }
         }
         return []
     }
 }
 
-// MARK: - Knowledge List View
+// MARK: - Views
 struct KnowledgeListView: View {
     @ObservedObject var store: KnowledgeStore
     @State private var selectedLesson: AppLessonInfo?
 
     private let dateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd HH:mm"
-        return f
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd HH:mm"; return f
     }()
 
     var body: some View {
@@ -209,8 +273,7 @@ struct KnowledgeListView: View {
             HStack {
                 HStack(spacing: 8) {
                     Text("🧠").font(.title2)
-                    Text("Knowledge Base")
-                        .font(.system(.title2, design: .rounded)).fontWeight(.bold)
+                    Text("Knowledge Base").font(.system(.title2, design: .rounded)).fontWeight(.bold)
                 }
                 Spacer()
                 if store.newCount > 0 {
@@ -218,15 +281,12 @@ struct KnowledgeListView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "checkmark.circle.fill")
                             Text("Mark All Read")
-                        }
-                        .font(.system(size: 12, weight: .medium))
+                        }.font(.system(size: 12, weight: .medium))
                         .padding(.horizontal, 10).padding(.vertical, 5)
                         .background(.blue.opacity(0.2)).cornerRadius(8)
-                    }
-                    .buttonStyle(.plain)
+                    }.buttonStyle(.plain)
                 }
-            }
-            .padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 12)
+            }.padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 12)
 
             HStack(spacing: 20) {
                 Label("\(store.lessons.count) lessons", systemImage: "book.closed.fill")
@@ -236,8 +296,7 @@ struct KnowledgeListView: View {
                         .font(.system(size: 12, weight: .semibold)).foregroundStyle(.yellow)
                 }
                 Spacer()
-            }
-            .padding(.horizontal, 20).padding(.bottom, 8)
+            }.padding(.horizontal, 20).padding(.bottom, 8)
 
             Divider().padding(.horizontal, 16)
 
@@ -255,20 +314,16 @@ struct KnowledgeListView: View {
                             LessonRow(lesson: lesson, dateFormatter: dateFormatter)
                                 .onTapGesture { selectedLesson = lesson }
                         }
-                    }
-                    .padding(.horizontal, 12).padding(.vertical, 8)
+                    }.padding(.horizontal, 12).padding(.vertical, 8)
                 }
             }
         }
-        .sheet(item: $selectedLesson) { lesson in
-            LessonDetailView(lesson: lesson)
-        }
+        .sheet(item: $selectedLesson) { LessonDetailView(lesson: $0) }
     }
 }
 
 struct LessonRow: View {
-    let lesson: AppLessonInfo
-    let dateFormatter: DateFormatter
+    let lesson: AppLessonInfo; let dateFormatter: DateFormatter
 
     var body: some View {
         HStack(spacing: 10) {
@@ -278,8 +333,7 @@ struct LessonRow: View {
                     .font(.system(size: 13, weight: lesson.isNew ? .semibold : .regular))
                     .foregroundStyle(.white).lineLimit(2)
                 HStack(spacing: 6) {
-                    Text(dateFormatter.string(from: lesson.date))
-                        .font(.system(size: 10)).foregroundStyle(.secondary)
+                    Text(dateFormatter.string(from: lesson.date)).font(.system(size: 10)).foregroundStyle(.secondary)
                     ForEach(lesson.tags.prefix(3), id: \.self) { tag in
                         Text(tag).font(.system(size: 9, weight: .medium))
                             .padding(.horizontal, 5).padding(.vertical, 1)
@@ -337,8 +391,7 @@ struct LessonDetailView: View {
                 let path = NSHomeDirectory() + "/.gemini/antigravity/scratch/smart-llm/lessons/\(lesson.filename)"
                 NSWorkspace.shared.open(URL(fileURLWithPath: path))
             }.buttonStyle(.bordered)
-        }
-        .padding(20).frame(width: 500, height: 400).preferredColorScheme(.dark)
+        }.padding(20).frame(width: 500, height: 400).preferredColorScheme(.dark)
     }
 }
 
@@ -346,6 +399,12 @@ struct LessonDetailView: View {
 @main
 struct SmartLLMApp: App {
     @StateObject private var store = KnowledgeStore()
+
+    init() {
+        // 앱 시작 시 HTTP 서버 자동 기동
+        let dataPath = getWidgetDataPath()
+        WidgetDataServer.shared.start(servingPath: dataPath)
+    }
 
     var body: some Scene {
         WindowGroup {

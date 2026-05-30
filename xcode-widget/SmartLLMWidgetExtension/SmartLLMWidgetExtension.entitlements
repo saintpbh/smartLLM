@@ -6,10 +6,5 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
-	<key>com.apple.security.temporary-exception.files.absolute-path.read-only</key>
-	<array>
-		<string>/Users/bongpark/Library/Group Containers/</string>
-		<string>/tmp/smartllm/</string>
-	</array>
 </dict>
 </plist>

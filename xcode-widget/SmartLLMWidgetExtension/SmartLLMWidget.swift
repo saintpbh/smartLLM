@@ -2,12 +2,8 @@ import WidgetKit
 import SwiftUI
 import Foundation
 
-// MARK: - App Group 기반 데이터 공유 (샌드박스 호환)
-// 메인 앱 & Python 와처가 App Group 컨테이너에 JSON을 쓰고,
-// 위젯이 그곳에서 읽음 → 서버 불필요, 샌드박스 문제 해결
-
-private let kGroupID = "group.com.bongpark.SmartLLM"
-private let kDataFile = "widget_data.json"
+// MARK: - 위젯이 localhost HTTP로 데이터를 읽음 (샌드박스에서 유일하게 작동하는 방법)
+private let kDataURL = "http://localhost:18923/widget_data.json"
 
 // MARK: - Codable Models
 struct WidgetLessonData: Codable, Identifiable {
@@ -38,7 +34,7 @@ struct SmartLLMEntry: TimelineEntry {
     let isActive: Bool
 }
 
-// MARK: - App Group Timeline Provider
+// MARK: - HTTP-Based Timeline Provider
 struct SmartLLMProvider: TimelineProvider {
     func placeholder(in context: Context) -> SmartLLMEntry {
         SmartLLMEntry(date: .now, totalFiles: 0, totalLessons: 0,
@@ -46,47 +42,48 @@ struct SmartLLMProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SmartLLMEntry) -> Void) {
-        completion(readGroupData())
+        fetchData { entry in
+            completion(entry)
+        }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SmartLLMEntry>) -> Void) {
-        let entry = readGroupData()
-        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 5, to: .now)!
-        completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
+        fetchData { entry in
+            let nextUpdate = Calendar.current.date(byAdding: .minute, value: 5, to: .now)!
+            completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
+        }
     }
 
-    /// widget_data.json 읽기 — 여러 경로 시도
-    private func readGroupData() -> SmartLLMEntry {
-        let paths = [
-            // Python 와처가 쓴 Group Container 경로
-            "/Users/bongpark/Library/Group Containers/\(kGroupID)/\(kDataFile)",
-            // /tmp fallback
-            "/tmp/smartllm/\(kDataFile)",
-        ]
-
-        for path in paths {
-            let url = URL(fileURLWithPath: path)
-            if let entry = parseJSON(at: url) { return entry }
+    private func fetchData(completion: @escaping (SmartLLMEntry) -> Void) {
+        guard let url = URL(string: kDataURL) else {
+            completion(defaultEntry())
+            return
         }
 
-        return SmartLLMEntry(date: .now, totalFiles: 0, totalLessons: 0,
-                             newLessonsCount: 0, latestLessons: [], isActive: false)
+        let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 3)
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard let data = data,
+                  let sync = try? JSONDecoder().decode(WidgetSyncData.self, from: data) else {
+                completion(defaultEntry())
+                return
+            }
+
+            let isActive = (Date().timeIntervalSince1970 - sync.lastUpdated) < 3600
+            let entry = SmartLLMEntry(
+                date: .now,
+                totalFiles: sync.totalFiles,
+                totalLessons: sync.totalLessons,
+                newLessonsCount: sync.newLessonsCount,
+                latestLessons: Array(sync.lessons.prefix(3)),
+                isActive: isActive
+            )
+            completion(entry)
+        }.resume()
     }
 
-    private func parseJSON(at url: URL) -> SmartLLMEntry? {
-        guard let data = try? Data(contentsOf: url),
-              let sync = try? JSONDecoder().decode(WidgetSyncData.self, from: data) else {
-            return nil
-        }
-        let isActive = (Date().timeIntervalSince1970 - sync.lastUpdated) < 3600
-        return SmartLLMEntry(
-            date: .now,
-            totalFiles: sync.totalFiles,
-            totalLessons: sync.totalLessons,
-            newLessonsCount: sync.newLessonsCount,
-            latestLessons: Array(sync.lessons.prefix(3)),
-            isActive: isActive
-        )
+    private func defaultEntry() -> SmartLLMEntry {
+        SmartLLMEntry(date: .now, totalFiles: 0, totalLessons: 0,
+                      newLessonsCount: 0, latestLessons: [], isActive: false)
     }
 }
 
@@ -98,8 +95,7 @@ struct SmartLLMSmallView: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .top) {
                 HStack(spacing: 4) {
-                    Text("🧠")
-                        .font(.system(size: 13))
+                    Text("🧠").font(.system(size: 13))
                     Text("SMART LLM")
                         .font(.system(size: 11, weight: .heavy, design: .rounded))
                         .foregroundStyle(.white)
@@ -128,25 +124,16 @@ struct SmartLLMSmallView: View {
 
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("FILES")
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundStyle(.secondary)
+                    Text("FILES").font(.system(size: 7, weight: .bold)).foregroundStyle(.secondary)
                     Text("\(entry.totalFiles)")
-                        .font(.system(.title2, design: .rounded))
-                        .bold()
-                        .foregroundStyle(.white)
+                        .font(.system(.title2, design: .rounded)).bold().foregroundStyle(.white)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 1) {
-                    Text("KNOWLEDGE")
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundStyle(.secondary)
+                    Text("KNOWLEDGE").font(.system(size: 7, weight: .bold)).foregroundStyle(.secondary)
                     Text("\(entry.totalLessons)")
-                        .font(.system(.title2, design: .rounded))
-                        .bold()
-                        .foregroundStyle(
-                            LinearGradient(colors: [.blue, .purple], startPoint: .leading, endPoint: .trailing)
-                        )
+                        .font(.system(.title2, design: .rounded)).bold()
+                        .foregroundStyle(LinearGradient(colors: [.blue, .purple], startPoint: .leading, endPoint: .trailing))
                 }
             }
 
@@ -154,21 +141,15 @@ struct SmartLLMSmallView: View {
 
             if entry.newLessonsCount > 0 {
                 HStack(spacing: 3) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 8))
-                        .foregroundStyle(.yellow)
+                    Image(systemName: "sparkles").font(.system(size: 8)).foregroundStyle(.yellow)
                     Text("\(entry.newLessonsCount) new — tap to view")
-                        .font(.system(size: 7, weight: .medium))
-                        .foregroundStyle(.yellow)
+                        .font(.system(size: 7, weight: .medium)).foregroundStyle(.yellow)
                 }
             } else {
                 HStack(spacing: 3) {
-                    Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 8))
-                        .foregroundStyle(.green)
+                    Image(systemName: "checkmark.seal.fill").font(.system(size: 8)).foregroundStyle(.green)
                     Text("All knowledge synced")
-                        .font(.system(size: 7, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 7, weight: .medium)).foregroundStyle(.secondary)
                 }
             }
         }
@@ -191,22 +172,18 @@ struct SmartLLMMediumView: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
-                    Text("🧠")
-                        .font(.system(size: 13))
+                    Text("🧠").font(.system(size: 13))
                     Text("SMART LLM")
-                        .font(.system(size: 11, weight: .heavy, design: .rounded))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 11, weight: .heavy, design: .rounded)).foregroundStyle(.white)
                     if entry.newLessonsCount > 0 {
                         Text("\(entry.newLessonsCount)")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(.white)
+                            .font(.system(size: 9, weight: .bold)).foregroundColor(.white)
                             .frame(width: 16, height: 16)
                             .background(Circle().fill(.red))
                     }
                 }
                 Text("COGNITIVE LEDGER")
-                    .font(.system(size: 7, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 7, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
                 Spacer(minLength: 2)
                 HStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 1) {
@@ -227,8 +204,7 @@ struct SmartLLMMediumView: View {
             Divider().frame(height: 60).background(.white.opacity(0.1))
             VStack(alignment: .leading, spacing: 6) {
                 Text("LATEST INSIGHTS")
-                    .font(.system(size: 7, weight: .bold, design: .monospaced))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 7, weight: .bold, design: .monospaced)).foregroundStyle(.secondary)
                 if entry.latestLessons.isEmpty {
                     Spacer()
                     Text("No lessons yet").font(.system(size: 9)).foregroundStyle(.secondary)
@@ -239,12 +215,9 @@ struct SmartLLMMediumView: View {
                             Circle().fill(.blue).frame(width: 5, height: 5).offset(y: 3)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(lesson.title)
-                                    .font(.system(size: 8, weight: .medium))
-                                    .foregroundStyle(.white)
-                                    .lineLimit(1)
+                                    .font(.system(size: 8, weight: .medium)).foregroundStyle(.white).lineLimit(1)
                                 Text(dateFormatter.string(from: lesson.date))
-                                    .font(.system(size: 7))
-                                    .foregroundStyle(.secondary)
+                                    .font(.system(size: 7)).foregroundStyle(.secondary)
                             }
                         }
                     }
