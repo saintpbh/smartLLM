@@ -45,13 +45,18 @@
 ## 📝 PERSISTENT HARD-LEARNED LESSONS (실패 방지 지식 원장) 📝
 *경고: 과거 동일 작업 도메인에서 발생했던 결함 및 해결 노하우입니다. 에이전트들은 다음 해결 전략을 코딩 시작 전에 반드시 복기하십시오.*
 
+### 🛡️ Lesson: swiftc CLI로 컴파일한 WidgetKit 확장 프로그램이 pluginkit에는 등록되지만 macOS
+- **영향 영역**: `macos`, `widgetkit`, `xcode`, `swiftui`, `widget-gallery`, `chronod`
+- **과거 오류**: *"swiftc CLI로 컴파일한 WidgetKit 확장 프로그램이 pluginkit에는 등록되지만 macOS 위젯 갤러리(Edit Widgets)에 노출되지 않음. chronod가 프로비저닝 서명 검증을 통과하지 못함..."*
+- **해결 전략**: **WidgetKit 위젯은 반드시 Xcode 프로젝트(.xcodeproj)를 통해 빌드해야 함. xcodegen으로 project.yml에서 프로젝트를 생성하고, xcodebuild CLI로 빌드하면 Xcode GUI 없이도 프로비저닝/서명이 자동 처리되어 위젯 갤러리에 정상 노출됨. swiftc + codesign ad-hoc 조합으로는 절대 불가**
+
 ### 🛡️ Lesson: GPIOA Moder bit setting had bit shift overlap
 - **영향 영역**: `gpio`, `stm32`
 - **과거 오류**: *"GPIOA Moder bit setting had bit shift overlap..."*
 - **해결 전략**: **Use GPIO_MODER_MODER5_0 instead of raw 0x01 shift on Pin A5**
 
 ## 🧠 SMART LLM — Workspace Cognitive Architecture Map
-*Memorized: 153 code entities, 23 documentation nodes, and 0 relationship boundaries.*
+*Memorized: 153 code entities, 28 documentation nodes, and 0 relationship boundaries.*
 
 ### 🏛️ Cohesive Architecture Communities (GraphRAG Synopsis)
 안티그라비티 에이전트들은 다음 구조적 단위(Cohesive Communities)를 기준으로 코드를 탐색하고 작업하십시오.

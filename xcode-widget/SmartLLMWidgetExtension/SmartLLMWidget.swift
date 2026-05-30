@@ -2,109 +2,200 @@ import WidgetKit
 import SwiftUI
 import Foundation
 
-// MARK: - Data Model
-struct WidgetStats: Codable {
-    let total_files: Int
-    let alerts_count: Int
-    let active_alert: String
+// MARK: - Configuration — 모든 데이터를 로컬 파일에서 직접 읽음 (서버 불필요)
+private enum Config {
+    static let workspacePath: String = {
+        NSString(string: "~/.gemini/antigravity/scratch/smart-llm").expandingTildeInPath
+    }()
+    static var lessonsDir: String { workspacePath + "/lessons" }
+    static var indexPath: String { workspacePath + "/smart-llm-out/index.json" }
+    static var graphPath: String { workspacePath + "/smart-llm-out/graph.json" }
+    static var lastSeenPath: String { workspacePath + "/.widget_last_seen" }
+    static var agentsPath: String { workspacePath + "/AGENTS.md" }
+}
+
+// MARK: - Lesson Model
+struct LessonInfo: Identifiable, Codable {
+    var id: String { filename }
+    let filename: String
+    let title: String
+    let timestamp: Double
+    let tags: [String]
+
+    var date: Date { Date(timeIntervalSince1970: timestamp) }
 }
 
 // MARK: - Timeline Entry
 struct SmartLLMEntry: TimelineEntry {
     let date: Date
     let totalFiles: Int
-    let alertsCount: Int
-    let activeAlert: String
-    let isOnline: Bool
+    let totalLessons: Int
+    let newLessonsCount: Int
+    let latestLessons: [LessonInfo]
+    let isActive: Bool
 }
 
-// MARK: - Timeline Provider
+// MARK: - File-Based Timeline Provider (서버 의존성 제거)
 struct SmartLLMProvider: TimelineProvider {
     func placeholder(in context: Context) -> SmartLLMEntry {
-        SmartLLMEntry(date: .now, totalFiles: 0, alertsCount: 0, activeAlert: "Loading...", isOnline: false)
+        SmartLLMEntry(date: .now, totalFiles: 0, totalLessons: 0,
+                      newLessonsCount: 0, latestLessons: [], isActive: false)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SmartLLMEntry) -> Void) {
-        fetchData { entry in completion(entry) }
+        completion(readLocalData())
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SmartLLMEntry>) -> Void) {
-        fetchData { entry in
-            let next = Calendar.current.date(byAdding: .second, value: 15, to: .now)!
-            completion(Timeline(entries: [entry], policy: .after(next)))
-        }
+        let entry = readLocalData()
+        // 5분마다 자동 갱신
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 5, to: .now)!
+        completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
     }
 
-    private func fetchData(completion: @escaping (SmartLLMEntry) -> Void) {
-        guard let url = URL(string: "http://127.0.0.1:8000/api/widget_stats") else {
-            completion(offlineEntry())
-            return
-        }
-        var req = URLRequest(url: url)
-        req.timeoutInterval = 2
-        URLSession.shared.dataTask(with: req) { data, _, error in
-            guard error == nil, let data = data,
-                  let stats = try? JSONDecoder().decode(WidgetStats.self, from: data) else {
-                completion(offlineEntry())
-                return
-            }
-            completion(SmartLLMEntry(
-                date: .now,
-                totalFiles: stats.total_files,
-                alertsCount: stats.alerts_count,
-                activeAlert: stats.active_alert,
-                isOnline: true
-            ))
-        }.resume()
+    // MARK: - 로컬 파일에서 모든 데이터를 직접 읽음
+    private func readLocalData() -> SmartLLMEntry {
+        let totalFiles = readTotalFiles()
+        let lessons = readLessons()
+        let lastSeen = readLastSeenDate()
+        let newLessons = lessons.filter { $0.date > lastSeen }
+
+        let isActive: Bool = {
+            let fm = FileManager.default
+            guard let attrs = try? fm.attributesOfItem(atPath: Config.agentsPath),
+                  let modDate = attrs[.modificationDate] as? Date else { return false }
+            return modDate.timeIntervalSinceNow > -3600 // 1시간 이내 갱신이면 active
+        }()
+
+        return SmartLLMEntry(
+            date: .now,
+            totalFiles: totalFiles,
+            totalLessons: lessons.count,
+            newLessonsCount: newLessons.count,
+            latestLessons: Array(lessons.prefix(3)),
+            isActive: isActive
+        )
     }
 
-    private func offlineEntry() -> SmartLLMEntry {
-        // Fallback: read index.json directly from disk
-        let indexPath = NSString(string: "~/.gemini/antigravity/scratch/smart-llm/smart-llm-out/index.json").expandingTildeInPath
-        var files = 0
-        if let data = try? Data(contentsOf: URL(fileURLWithPath: indexPath)),
+    private func readTotalFiles() -> Int {
+        // index.json → doc_map 키 수
+        if let data = try? Data(contentsOf: URL(fileURLWithPath: Config.indexPath)),
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            let docMap = json["doc_map"] as? [String: Any] {
-            files = docMap.count
+            return docMap.count
         }
-        return SmartLLMEntry(date: .now, totalFiles: files, alertsCount: 0, activeAlert: "Offline", isOnline: false)
+        // Fallback: graph.json
+        if let data = try? Data(contentsOf: URL(fileURLWithPath: Config.graphPath)),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let nodes = json["nodes"] as? [[String: Any]] {
+            return nodes.count
+        }
+        return 0
+    }
+
+    private func readLessons() -> [LessonInfo] {
+        let fm = FileManager.default
+        guard let files = try? fm.contentsOfDirectory(atPath: Config.lessonsDir) else { return [] }
+
+        return files
+            .filter { $0.hasSuffix(".md") }
+            .compactMap { filename -> LessonInfo? in
+                let path = Config.lessonsDir + "/" + filename
+                guard let attrs = try? fm.attributesOfItem(atPath: path),
+                      let modDate = attrs[.modificationDate] as? Date else { return nil }
+
+                let title = parseTitle(from: path)
+                let tags = parseTags(from: path)
+
+                return LessonInfo(
+                    filename: filename,
+                    title: title,
+                    timestamp: modDate.timeIntervalSince1970,
+                    tags: tags
+                )
+            }
+            .sorted { $0.timestamp > $1.timestamp }
+    }
+
+    private func parseTitle(from path: String) -> String {
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+              let content = String(data: data, encoding: .utf8) else {
+            return "Unknown Lesson"
+        }
+        let firstLine = content.components(separatedBy: .newlines).first ?? ""
+        return firstLine
+            .replacingOccurrences(of: "# Lesson Learned: ", with: "")
+            .replacingOccurrences(of: "# ", with: "")
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+    private func parseTags(from path: String) -> [String] {
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+              let content = String(data: data, encoding: .utf8) else { return [] }
+        for line in content.components(separatedBy: .newlines) {
+            if line.contains("Context/Tags") {
+                return line.components(separatedBy: "`")
+                    .enumerated()
+                    .filter { $0.offset % 2 == 1 }
+                    .map { $0.element }
+            }
+        }
+        return []
+    }
+
+    private func readLastSeenDate() -> Date {
+        guard let content = try? String(contentsOfFile: Config.lastSeenPath, encoding: .utf8)
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+              let ts = Double(content) else {
+            return Date.distantPast
+        }
+        return Date(timeIntervalSince1970: ts)
     }
 }
 
-// MARK: - Widget View
-struct SmartLLMWidgetView: View {
+// MARK: - Widget Views
+
+struct SmartLLMSmallView: View {
     var entry: SmartLLMEntry
-    @Environment(\.widgetFamily) var family
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Header
-            HStack {
-                HStack(spacing: 5) {
+        VStack(alignment: .leading, spacing: 4) {
+            // Header + Badge
+            HStack(alignment: .top) {
+                HStack(spacing: 4) {
                     Text("🧠")
-                        .font(.system(size: 14))
+                        .font(.system(size: 13))
                     Text("SMART LLM")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .font(.system(size: 11, weight: .heavy, design: .rounded))
                         .foregroundStyle(.white)
                 }
                 Spacer()
-                Circle()
-                    .fill(entry.isOnline ? .green : .orange)
-                    .frame(width: 7, height: 7)
-                    .shadow(color: entry.isOnline ? .green : .orange, radius: 3)
+                if entry.newLessonsCount > 0 {
+                    Text("\(entry.newLessonsCount)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 18, height: 18)
+                        .background(Circle().fill(.red))
+                        .shadow(color: .red.opacity(0.6), radius: 4)
+                } else {
+                    Circle()
+                        .fill(entry.isActive ? .green : .gray)
+                        .frame(width: 7, height: 7)
+                        .shadow(color: entry.isActive ? .green : .clear, radius: 3)
+                }
             }
 
             Text("COGNITIVE LEDGER")
-                .font(.system(size: 8, weight: .semibold, design: .monospaced))
+                .font(.system(size: 7, weight: .semibold, design: .monospaced))
                 .foregroundStyle(.secondary)
 
-            Divider()
+            Spacer(minLength: 2)
 
             // Metrics
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text("FILES")
-                        .font(.system(size: 8, weight: .bold))
+                        .font(.system(size: 7, weight: .bold))
                         .foregroundStyle(.secondary)
                     Text("\(entry.totalFiles)")
                         .font(.system(.title2, design: .rounded))
@@ -112,46 +203,187 @@ struct SmartLLMWidgetView: View {
                         .foregroundStyle(.white)
                 }
                 Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("ALERTS")
-                        .font(.system(size: 8, weight: .bold))
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text("KNOWLEDGE")
+                        .font(.system(size: 7, weight: .bold))
                         .foregroundStyle(.secondary)
-                    Text("\(entry.alertsCount)")
+                    Text("\(entry.totalLessons)")
                         .font(.system(.title2, design: .rounded))
                         .bold()
-                        .foregroundStyle(entry.alertsCount > 0 ? .red : .green)
+                        .foregroundStyle(
+                            LinearGradient(colors: [.blue, .purple], startPoint: .leading, endPoint: .trailing)
+                        )
                 }
             }
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 2)
 
             // Status
-            if entry.alertsCount > 0 {
-                HStack(alignment: .top, spacing: 3) {
-                    Text("⚠️").font(.system(size: 9))
-                    Text(entry.activeAlert)
-                        .font(.system(size: 8, weight: .medium))
+            if entry.newLessonsCount > 0 {
+                HStack(spacing: 3) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 8))
                         .foregroundStyle(.yellow)
-                        .lineLimit(2)
+                    Text("\(entry.newLessonsCount) new insight\(entry.newLessonsCount > 1 ? "s" : "") — tap to view")
+                        .font(.system(size: 7, weight: .medium))
+                        .foregroundStyle(.yellow)
                 }
             } else {
                 HStack(spacing: 3) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 9))
-                        .foregroundStyle(.green)
-                    Text(entry.isOnline ? "All systems synced" : "Offline mode")
+                    Image(systemName: "checkmark.seal.fill")
                         .font(.system(size: 8))
+                        .foregroundStyle(.green)
+                    Text("All knowledge synced")
+                        .font(.system(size: 7, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
             }
         }
         .padding(12)
+        .widgetURL(URL(string: "smartllm://knowledge"))
+    }
+}
+
+struct SmartLLMMediumView: View {
+    var entry: SmartLLMEntry
+
+    private var dateFormatter: DateFormatter {
+        let f = DateFormatter()
+        f.dateFormat = "MM/dd HH:mm"
+        return f
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Left: Metrics
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    Text("🧠")
+                        .font(.system(size: 13))
+                    Text("SMART LLM")
+                        .font(.system(size: 11, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.white)
+                    if entry.newLessonsCount > 0 {
+                        Text("\(entry.newLessonsCount)")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 16, height: 16)
+                            .background(Circle().fill(.red))
+                            .shadow(color: .red.opacity(0.6), radius: 3)
+                    }
+                }
+
+                Text("COGNITIVE LEDGER")
+                    .font(.system(size: 7, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.secondary)
+
+                Spacer(minLength: 2)
+
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("FILES")
+                            .font(.system(size: 7, weight: .bold))
+                            .foregroundStyle(.secondary)
+                        Text("\(entry.totalFiles)")
+                            .font(.system(.title3, design: .rounded))
+                            .bold()
+                            .foregroundStyle(.white)
+                    }
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("KNOWLEDGE")
+                            .font(.system(size: 7, weight: .bold))
+                            .foregroundStyle(.secondary)
+                        Text("\(entry.totalLessons)")
+                            .font(.system(.title3, design: .rounded))
+                            .bold()
+                            .foregroundStyle(.blue)
+                    }
+                }
+
+                Spacer(minLength: 2)
+
+                // Status
+                HStack(spacing: 3) {
+                    Circle()
+                        .fill(entry.isActive ? .green : .gray)
+                        .frame(width: 5, height: 5)
+                    Text(entry.isActive ? "Watching" : "Idle")
+                        .font(.system(size: 7))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Divider()
+                .frame(height: 60)
+                .background(.white.opacity(0.1))
+
+            // Right: Latest Lessons
+            VStack(alignment: .leading, spacing: 6) {
+                Text("LATEST INSIGHTS")
+                    .font(.system(size: 7, weight: .bold, design: .monospaced))
+                    .foregroundStyle(.secondary)
+
+                if entry.latestLessons.isEmpty {
+                    Spacer()
+                    Text("No lessons yet")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                } else {
+                    ForEach(entry.latestLessons.prefix(3)) { lesson in
+                        HStack(alignment: .top, spacing: 4) {
+                            // New indicator
+                            if lesson.date > (Calendar.current.date(byAdding: .hour, value: -24, to: .now) ?? .now) {
+                                Circle()
+                                    .fill(.blue)
+                                    .frame(width: 5, height: 5)
+                                    .offset(y: 3)
+                            } else {
+                                Circle()
+                                    .fill(.clear)
+                                    .frame(width: 5, height: 5)
+                            }
+
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(lesson.title)
+                                    .font(.system(size: 8, weight: .medium))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                                Text(dateFormatter.string(from: lesson.date))
+                                    .font(.system(size: 7))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .padding(12)
+        .widgetURL(URL(string: "smartllm://knowledge"))
+    }
+}
+
+// MARK: - Main Widget View Router
+struct SmartLLMWidgetView: View {
+    var entry: SmartLLMEntry
+    @Environment(\.widgetFamily) var family
+
+    var body: some View {
+        Group {
+            switch family {
+            case .systemMedium:
+                SmartLLMMediumView(entry: entry)
+            default:
+                SmartLLMSmallView(entry: entry)
+            }
+        }
         .containerBackground(for: .widget) {
             ZStack {
-                Color(red: 25/255, green: 27/255, blue: 38/255)
+                Color(red: 18/255, green: 20/255, blue: 30/255)
                 RadialGradient(
-                    colors: [.blue.opacity(0.12), .purple.opacity(0.05), .clear],
-                    center: .topTrailing, startRadius: 0, endRadius: 100
+                    colors: [.blue.opacity(0.10), .purple.opacity(0.06), .clear],
+                    center: .topTrailing, startRadius: 0, endRadius: 120
                 )
             }
         }
@@ -168,7 +400,7 @@ struct SmartLLMWidget: Widget {
             SmartLLMWidgetView(entry: entry)
         }
         .configurationDisplayName("SMART LLM Monitor")
-        .description("실시간 지식 축적 상황 및 제약 위반 경고 모니터링")
+        .description("AI 지식 축적 실시간 모니터 — 서버 불필요, 로컬 파일 직접 읽기")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

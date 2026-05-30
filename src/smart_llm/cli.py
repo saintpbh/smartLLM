@@ -348,28 +348,32 @@ def handle_widget(args):
     workspace = Path(args.workspace).resolve()
     print(f"🧠 [SMART LLM] Initializing Native macOS Desktop Widget...")
     
-    # 1. Primary: True native Apple-recommended WidgetKit extension application
-    app_path = workspace / "smart-llm-out" / "SmartLLM.app"
+    # 1. Primary: Xcode-built WidgetKit app in /Applications (only reliable method)
+    system_app_path = Path("/Applications/SmartLLM.app")
+    local_app_path = workspace / "smart-llm-out" / "SmartLLM.app"
     user_app_path = Path.home() / "Applications" / "SmartLLM.app"
-    target_app = user_app_path if user_app_path.exists() else app_path
     
-    if target_app.exists():
-        import subprocess
-        print(f"🍏 Starting Apple-recommended Native SwiftUI Widget Hub App...")
-        try:
-            # Launch the compiled SwiftUI main app bundle
-            subprocess.Popen(["open", str(target_app)])
-            print("-" * 65)
-            print("🚀 Native macOS SwiftUI Widget Hub has been launched successfully!")
-            print("💡 How to add the SMART LLM Widget to your Desktop:")
-            print("   1. Right-click anywhere on your Desktop, select 'Edit Widgets...'")
-            print("      (Or click the date/time in the Menu Bar -> 'Edit Widgets' at bottom)")
-            print("   2. Search for 'SMART LLM' in the Widget Gallery.")
-            print("   3. Drag the small or medium widget onto your Desktop!")
-            print("-" * 65)
-            return
-        except Exception as e:
-            print(f"⚠️ Failed to launch native SwiftUI bundle: {e}. Trying legacy floating app...")
+    for target_app in [system_app_path, user_app_path, local_app_path]:
+        if target_app.exists():
+            import subprocess
+            print(f"🍏 Opening SMART LLM Knowledge Base ({target_app})...")
+            try:
+                subprocess.Popen(["open", str(target_app)])
+                print("-" * 65)
+                print("🚀 SMART LLM Knowledge Base launched!")
+                print("💡 위젯 추가 방법:")
+                print("   1. 바탕화면 우클릭 → '위젯 편집...' 선택")
+                print("   2. 검색창에 'SMART LLM' 입력")
+                print("   3. 소형/중형 위젯을 바탕화면으로 드래그!")
+                print()
+                print("📌 위젯은 서버 없이 로컬 파일에서 직접 데이터를 읽습니다.")
+                print("   새 지식 축적 시 위젯에 빨간 배지가 표시됩니다.")
+                print("-" * 65)
+                return
+            except Exception as e:
+                print(f"⚠️ Failed to launch: {e}")
+                continue
+
 
     # 2. Secondary: Legacy floating Cocoa WebView widget app fallback
     project_root = Path(__file__).resolve().parent.parent.parent

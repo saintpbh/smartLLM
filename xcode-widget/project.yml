@@ -20,11 +20,20 @@ targets:
     platform: macOS
     sources:
       - SmartLLMApp
+    info:
+      path: SmartLLMApp/Info.plist
+      properties:
+        CFBundleDisplayName: "SmartLLM"
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        LSUIElement: true
+        CFBundleURLTypes:
+          - CFBundleURLName: "SmartLLM URL Scheme"
+            CFBundleURLSchemes:
+              - smartllm
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.bongpark.SmartLLM
-        INFOPLIST_KEY_LSUIElement: true
-        GENERATE_INFOPLIST_FILE: true
         PRODUCT_NAME: SmartLLM
     dependencies:
       - target: SmartLLMWidgetExtension
@@ -55,3 +64,4 @@ targets:
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
+        com.apple.security.files.home-directory.read-only: true

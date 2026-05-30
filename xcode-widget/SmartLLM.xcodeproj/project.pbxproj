@@ -37,6 +37,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		102542D684BCF42755BC24F2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		120706E4034DD159B810D593 /* SmartLLMApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartLLMApp.swift; sourceTree = "<group>"; };
 		14F74621AAA52B7FCF7065B9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		53851D448CBAE1968FA7735A /* SmartLLMWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SmartLLMWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -49,6 +50,7 @@
 		20454F23043D1F2F58C2FE77 /* SmartLLMApp */ = {
 			isa = PBXGroup;
 			children = (
+				102542D684BCF42755BC24F2 /* Info.plist */,
 				120706E4034DD159B810D593 /* SmartLLMApp.swift */,
 			);
 			path = SmartLLMApp;
@@ -250,8 +252,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_FILE = SmartLLMApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -367,8 +368,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_FILE = SmartLLMApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
