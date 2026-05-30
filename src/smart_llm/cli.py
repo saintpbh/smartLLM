@@ -154,13 +154,24 @@ def handle_ingest(args):
     print("⚡ Step 6: Compiling Dense & Sparse Search Index...")
     index_file = out_dir / "index.json"
     
-    # Save the doc_map for indexing
+    # Save the doc_map for indexing, preserving register_map if exists
+    existing_index = {}
+    if index_file.exists():
+        try:
+            with open(index_file, "r", encoding="utf-8") as f:
+                existing_index = json.load(f)
+        except Exception:
+            pass
+            
     index_data = {
         "doc_map": doc_map,
         "scan_metadata": {
             "total_files": len(doc_map),
         }
     }
+    if "register_map" in existing_index:
+        index_data["register_map"] = existing_index["register_map"]
+        
     with open(index_file, "w", encoding="utf-8") as f:
         json.dump(index_data, f, ensure_ascii=False, indent=2)
         

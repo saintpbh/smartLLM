@@ -37,8 +37,16 @@
 - **조치 가이드**: 에이전트는 두 모듈의 파라미터 규격을 일치시키고 인터페이스 깨짐(Breaking Changes)을 방어하십시오.
 
 
+## 📝 PERSISTENT HARD-LEARNED LESSONS (실패 방지 지식 원장) 📝
+*경고: 과거 동일 작업 도메인에서 발생했던 결함 및 해결 노하우입니다. 에이전트들은 다음 해결 전략을 코딩 시작 전에 반드시 복기하십시오.*
+
+### 🛡️ Lesson: GPIOA Moder bit setting had bit shift overlap
+- **영향 영역**: `gpio`, `stm32`
+- **과거 오류**: *"GPIOA Moder bit setting had bit shift overlap..."*
+- **해결 전략**: **Use GPIO_MODER_MODER5_0 instead of raw 0x01 shift on Pin A5**
+
 ## 🧠 SMART LLM — Workspace Cognitive Architecture Map
-*Memorized: 142 code entities, 20 documentation nodes, and 0 relationship boundaries.*
+*Memorized: 142 code entities, 22 documentation nodes, and 0 relationship boundaries.*
 
 ### 🏛️ Cohesive Architecture Communities (GraphRAG Synopsis)
 안티그라비티 에이전트들은 다음 구조적 단위(Cohesive Communities)를 기준으로 코드를 탐색하고 작업하십시오.
