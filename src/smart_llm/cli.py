@@ -247,6 +247,60 @@ def handle_watch(args):
         sys.exit(1)
 
 
+def handle_bootstrap(args):
+    """Command handler for 'bootstrap'."""
+    workspace = Path(args.workspace).resolve()
+    ref_path = Path(args.ref_path).resolve()
+    print(f"🔌 [SMART LLM] Bootstrapping reference materials from: {ref_path}")
+    from smart_llm.bootstrap import ingest_reference_material
+    try:
+        res = ingest_reference_material(workspace, ref_path)
+        print(f"🚀 Bootstrap complete! Ingested {res['ingested_files']} reference files, parsed {res['registers_count']} registers.")
+    except Exception as e:
+        print(f"❌ Error during bootstrap: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_learn(args):
+    """Command handler for 'learn'."""
+    workspace = Path(args.workspace).resolve()
+    print(f"📝 [SMART LLM] Recording hard-learned debug lesson...")
+    from smart_llm.learn import record_lesson
+    try:
+        res = record_lesson(workspace, args.error, args.resolution, args.context)
+        print(f"🚀 Success! Lesson recorded and saved into: {res['lesson_file']}")
+        
+        # Trigger dynamic sync to update AGENTS.md immediately
+        from smart_llm.sync import sync_agents_file
+        sync_agents_file(workspace)
+        print(f"⚡ Synchronized new lessons to AGENTS.md.")
+    except Exception as e:
+        print(f"❌ Error during learn: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_verify(args):
+    """Command handler for 'verify'."""
+    workspace = Path(args.workspace).resolve()
+    print(f"🛡️ [SMART LLM] Running pre-emptive hardware & register constraint verification...")
+    from smart_llm.verify import scan_hardware_constraints
+    try:
+        violations = scan_hardware_constraints(workspace)
+        if violations:
+            print("-" * 50)
+            print(f"⚠️  {len(violations)} Hardware Constraint Violations Detected:")
+            for v in violations:
+                print(f"  - [{v['error_type']}] in {v['file']}:{v['line']} -> {v['symbol']}")
+                print(f"    Guide: {v['guideline']}")
+            print("-" * 50)
+            sys.exit(1)
+        else:
+            print("🚀 Success! All hardware static AST constraint validations passed.")
+    except Exception as e:
+        print(f"❌ Error during verification: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(description="SMART LLM: Semantic Memory & Architecture Retrieval Tool")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -273,6 +327,22 @@ def main():
     watch_parser = subparsers.add_parser("watch", help="Start the background filesystem watcher daemon")
     watch_parser.add_argument("--workspace", default=".", help="Path to watch")
 
+    # Bootstrap command
+    bootstrap_parser = subparsers.add_parser("bootstrap", help="Ingest custom hardware headers and datasheets")
+    bootstrap_parser.add_argument("ref_path", help="Path to reference headers or datasheets")
+    bootstrap_parser.add_argument("--workspace", default=".", help="Path to project workspace")
+
+    # Learn command
+    learn_parser = subparsers.add_parser("learn", help="Record a post-mortem lesson to prevent repeating mistakes")
+    learn_parser.add_argument("--error", required=True, help="Description of the error or bug resolved")
+    learn_parser.add_argument("--resolution", required=True, help="Detailed resolution strategy or correct code")
+    learn_parser.add_argument("--context", default="general", help="Comma-separated tags (e.g. gpio, stm32, spi)")
+    learn_parser.add_argument("--workspace", default=".", help="Path to project workspace")
+
+    # Verify command
+    verify_parser = subparsers.add_parser("verify", help="Run pre-emptive static hardware constraint checks")
+    verify_parser.add_argument("--workspace", default=".", help="Path to project workspace")
+
     args = parser.parse_args()
 
     if args.command == "ingest":
@@ -285,6 +355,12 @@ def main():
         handle_consolidate(args)
     elif args.command == "watch":
         handle_watch(args)
+    elif args.command == "bootstrap":
+        handle_bootstrap(args)
+    elif args.command == "learn":
+        handle_learn(args)
+    elif args.command == "verify":
+        handle_verify(args)
 
 if __name__ == "__main__":
     main()

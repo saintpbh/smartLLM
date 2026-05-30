@@ -126,6 +126,15 @@ def sync_agents_file(workspace_path: Path) -> Path:
     violations = check_polyglot_contracts(workspace_path)
     polyglot_widget = build_polyglot_alert_widget(violations)
     
+    # --- A3. Compile Hardware Constraint Alert Widget (Hardware Phase) ---
+    from smart_llm.verify import scan_hardware_constraints, build_hardware_verify_widget
+    hw_violations = scan_hardware_constraints(workspace_path)
+    hw_widget = build_hardware_verify_widget(hw_violations)
+    
+    # --- A4. Compile Persistent Hard-learned Lessons (Lesson Phase) ---
+    from smart_llm.learn import compile_lessons_widget
+    lessons_widget = compile_lessons_widget(workspace_path)
+    
     # --- B. Compile Core Architecture Map (GraphRAG Phase) ---
     compiled_map = compile_agents_doc(workspace_path, graph_data, doc_map)
     
@@ -148,6 +157,10 @@ def sync_agents_file(workspace_path: Path) -> Path:
         block_parts.append(broker_widget)
     if polyglot_widget:
         block_parts.append(polyglot_widget)
+    if hw_widget:
+        block_parts.append(hw_widget)
+    if lessons_widget:
+        block_parts.append(lessons_widget)
     block_parts.append(compiled_map)
     if proactive_widget:
         block_parts.append(proactive_widget)
