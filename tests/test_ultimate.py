@@ -97,5 +97,13 @@ class TestUltimateEngine(unittest.TestCase):
         self.assertEqual(len(endpoints), 1)
         self.assertEqual(endpoints[0][0], "/api/v1/users")
 
+    def test_dashboard_html_and_routing(self):
+        """Test that the embedded dashboard HTML is generated correctly and contains critical elements."""
+        from smart_llm.server import get_dashboard_html
+        html = get_dashboard_html()
+        self.assertIn("SMART LLM - Real-Time Cognitive Dashboard", html)
+        self.assertIn("d3.v7.min.js", html)
+        self.assertIn("<svg id=\"knowledge-svg\"></svg>", html)
+
 if __name__ == "__main__":
     unittest.main()

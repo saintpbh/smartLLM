@@ -301,6 +301,37 @@ def handle_verify(args):
         sys.exit(1)
 
 
+def handle_dashboard(args):
+    """Command handler for 'dashboard' (Starts the HTTP server and opens GUI)."""
+    workspace = Path(args.workspace).resolve()
+    port = int(args.port)
+    
+    from http.server import HTTPServer
+    import webbrowser
+    from smart_llm.server import DashboardHandler
+    
+    DashboardHandler.workspace_path = workspace
+    
+    server_address = ("", port)
+    httpd = HTTPServer(server_address, DashboardHandler)
+    
+    url = f"http://localhost:{port}"
+    print(f"🧠 [SMART LLM] Starting Cognitive Dashboard Server on: {url}")
+    print(f"🚀 Opening web browser dashboard...")
+    
+    # Automatically open default browser in background
+    try:
+        webbrowser.open_new_tab(url)
+    except Exception:
+        pass
+        
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\n💤 Stopping Dashboard Server...")
+        httpd.server_close()
+
+
 def main():
     parser = argparse.ArgumentParser(description="SMART LLM: Semantic Memory & Architecture Retrieval Tool")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -343,6 +374,11 @@ def main():
     verify_parser = subparsers.add_parser("verify", help="Run pre-emptive static hardware constraint checks")
     verify_parser.add_argument("--workspace", default=".", help="Path to project workspace")
 
+    # Dashboard command
+    dashboard_parser = subparsers.add_parser("dashboard", help="Start the interactive real-time cognitive web dashboard")
+    dashboard_parser.add_argument("--port", default="8000", help="Port to run the dashboard server on")
+    dashboard_parser.add_argument("--workspace", default=".", help="Path to project workspace")
+
     args = parser.parse_args()
 
     if args.command == "ingest":
@@ -361,6 +397,8 @@ def main():
         handle_learn(args)
     elif args.command == "verify":
         handle_verify(args)
+    elif args.command == "dashboard":
+        handle_dashboard(args)
 
 if __name__ == "__main__":
     main()

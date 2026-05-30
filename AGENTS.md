@@ -38,7 +38,7 @@
 
 
 ## 🧠 SMART LLM — Workspace Cognitive Architecture Map
-*Memorized: 134 code entities, 20 documentation nodes, and 0 relationship boundaries.*
+*Memorized: 142 code entities, 20 documentation nodes, and 0 relationship boundaries.*
 
 ### 🏛️ Cohesive Architecture Communities (GraphRAG Synopsis)
 안티그라비티 에이전트들은 다음 구조적 단위(Cohesive Communities)를 기준으로 코드를 탐색하고 작업하십시오.
