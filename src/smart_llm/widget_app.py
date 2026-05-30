@@ -50,7 +50,7 @@ class SmartLLMDesktopWidget:
         # Draw initial text structures
         self.txt_title = self.canvas.create_text(
             18, 24, text="SMART LLM", anchor="w",
-            fill="rgba(255,255,255,0.4)", font=("Outfit", 11, "bold")
+            fill="#71727a", font=("Outfit", 11, "bold")
         )
         
         # Pulsing LED dot
@@ -73,7 +73,7 @@ class SmartLLMDesktopWidget:
         # Footer
         self.txt_footer_lbl = self.canvas.create_text(
             18, 142, text="LATEST ACTIVE EVENT", anchor="w",
-            fill="rgba(255,255,255,0.25)", font=("Inter", 8, "bold")
+            fill="#4e526a", font=("Inter", 8, "bold")
         )
         
         self.txt_footer_val = self.canvas.create_text(
