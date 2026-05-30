@@ -1,0 +1,57 @@
+name: SmartLLM
+options:
+  bundleIdPrefix: com.bongpark
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGN_STYLE: "Automatic"
+
+targets:
+  SmartLLM:
+    type: application
+    platform: macOS
+    sources:
+      - SmartLLMApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.bongpark.SmartLLM
+        INFOPLIST_KEY_LSUIElement: true
+        GENERATE_INFOPLIST_FILE: true
+        PRODUCT_NAME: SmartLLM
+    dependencies:
+      - target: SmartLLMWidgetExtension
+
+  SmartLLMWidgetExtension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - SmartLLMWidgetExtension
+    info:
+      path: SmartLLMWidgetExtension/Info.plist
+      properties:
+        CFBundleDisplayName: "SMART LLM Monitor"
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.bongpark.SmartLLM.WidgetExtension
+        PRODUCT_NAME: SmartLLMWidgetExtension
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/../Frameworks"
+          - "@executable_path/../../../../Frameworks"
+    entitlements:
+      path: SmartLLMWidgetExtension/SmartLLMWidgetExtension.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true

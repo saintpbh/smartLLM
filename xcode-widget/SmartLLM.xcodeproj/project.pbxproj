@@ -1,0 +1,415 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		4F7E19C12923578961BB40B6 /* SmartLLMWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 53851D448CBAE1968FA7735A /* SmartLLMWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C6DD6D2FF35A39B5BD99A181 /* SmartLLMWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 917E6DA00952BB08CACA3B00 /* SmartLLMWidget.swift */; };
+		F7A0FBCB82D336A765901FF1 /* SmartLLMApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 120706E4034DD159B810D593 /* SmartLLMApp.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1D84B2C893E6414F16366BAA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DCE32405A35BF845B182F73F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5211ED3DC0F58BADCD59209E;
+			remoteInfo = SmartLLMWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AF7E48B6915DE3B8F37D72E6 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				4F7E19C12923578961BB40B6 /* SmartLLMWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		120706E4034DD159B810D593 /* SmartLLMApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartLLMApp.swift; sourceTree = "<group>"; };
+		14F74621AAA52B7FCF7065B9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		53851D448CBAE1968FA7735A /* SmartLLMWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SmartLLMWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		5CECD66C1C726A7D9A1C4C14 /* SmartLLM.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SmartLLM.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		701B81505B323E6DC7E6876A /* SmartLLMWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SmartLLMWidgetExtension.entitlements; sourceTree = "<group>"; };
+		917E6DA00952BB08CACA3B00 /* SmartLLMWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartLLMWidget.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		20454F23043D1F2F58C2FE77 /* SmartLLMApp */ = {
+			isa = PBXGroup;
+			children = (
+				120706E4034DD159B810D593 /* SmartLLMApp.swift */,
+			);
+			path = SmartLLMApp;
+			sourceTree = "<group>";
+		};
+		507DED466839633778A2D032 /* SmartLLMWidgetExtension */ = {
+			isa = PBXGroup;
+			children = (
+				14F74621AAA52B7FCF7065B9 /* Info.plist */,
+				917E6DA00952BB08CACA3B00 /* SmartLLMWidget.swift */,
+				701B81505B323E6DC7E6876A /* SmartLLMWidgetExtension.entitlements */,
+			);
+			path = SmartLLMWidgetExtension;
+			sourceTree = "<group>";
+		};
+		97DFE210A0135909FB47F86B = {
+			isa = PBXGroup;
+			children = (
+				20454F23043D1F2F58C2FE77 /* SmartLLMApp */,
+				507DED466839633778A2D032 /* SmartLLMWidgetExtension */,
+				A1E790B7FFC4F4BB1C3EAEBF /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A1E790B7FFC4F4BB1C3EAEBF /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5CECD66C1C726A7D9A1C4C14 /* SmartLLM.app */,
+				53851D448CBAE1968FA7735A /* SmartLLMWidgetExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5211ED3DC0F58BADCD59209E /* SmartLLMWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E19E0206294D4F820346E5F8 /* Build configuration list for PBXNativeTarget "SmartLLMWidgetExtension" */;
+			buildPhases = (
+				4CCC238305A33111E48C5CDA /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SmartLLMWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = SmartLLMWidgetExtension;
+			productReference = 53851D448CBAE1968FA7735A /* SmartLLMWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		E215DC17FC30F48643CEC47A /* SmartLLM */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FE439FB55896E16C90337A6D /* Build configuration list for PBXNativeTarget "SmartLLM" */;
+			buildPhases = (
+				70A143AA914741DC12D8FE79 /* Sources */,
+				AF7E48B6915DE3B8F37D72E6 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BF7D534D0108BD81FA7E2292 /* PBXTargetDependency */,
+			);
+			name = SmartLLM;
+			packageProductDependencies = (
+			);
+			productName = SmartLLM;
+			productReference = 5CECD66C1C726A7D9A1C4C14 /* SmartLLM.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		DCE32405A35BF845B182F73F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					5211ED3DC0F58BADCD59209E = {
+						ProvisioningStyle = Automatic;
+					};
+					E215DC17FC30F48643CEC47A = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 8EAB465CDCAB4BF666D1D8F5 /* Build configuration list for PBXProject "SmartLLM" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 97DFE210A0135909FB47F86B;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E215DC17FC30F48643CEC47A /* SmartLLM */,
+				5211ED3DC0F58BADCD59209E /* SmartLLMWidgetExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4CCC238305A33111E48C5CDA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C6DD6D2FF35A39B5BD99A181 /* SmartLLMWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		70A143AA914741DC12D8FE79 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F7A0FBCB82D336A765901FF1 /* SmartLLMApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BF7D534D0108BD81FA7E2292 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5211ED3DC0F58BADCD59209E /* SmartLLMWidgetExtension */;
+			targetProxy = 1D84B2C893E6414F16366BAA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1CC8C4EE2257CDB6A7ACA3D5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		41F53CF31D41C65B548ADACC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSUIElement = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.bongpark.SmartLLM;
+				PRODUCT_NAME = SmartLLM;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		5530AEFF3F3D9139A34BA023 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = SmartLLMWidgetExtension/SmartLLMWidgetExtension.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = SmartLLMWidgetExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.bongpark.SmartLLM.WidgetExtension;
+				PRODUCT_NAME = SmartLLMWidgetExtension;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		81ED1CCC616B15039542F989 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = SmartLLMWidgetExtension/SmartLLMWidgetExtension.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = SmartLLMWidgetExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.bongpark.SmartLLM.WidgetExtension;
+				PRODUCT_NAME = SmartLLMWidgetExtension;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		A429778723726155F5A6654D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		FC907C9B228FA39B59ECAB58 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSUIElement = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.bongpark.SmartLLM;
+				PRODUCT_NAME = SmartLLM;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		8EAB465CDCAB4BF666D1D8F5 /* Build configuration list for PBXProject "SmartLLM" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A429778723726155F5A6654D /* Debug */,
+				1CC8C4EE2257CDB6A7ACA3D5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E19E0206294D4F820346E5F8 /* Build configuration list for PBXNativeTarget "SmartLLMWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				81ED1CCC616B15039542F989 /* Debug */,
+				5530AEFF3F3D9139A34BA023 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FE439FB55896E16C90337A6D /* Build configuration list for PBXNativeTarget "SmartLLM" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FC907C9B228FA39B59ECAB58 /* Debug */,
+				41F53CF31D41C65B548ADACC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = DCE32405A35BF845B182F73F /* Project object */;
+}
