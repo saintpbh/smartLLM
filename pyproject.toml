@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smart-llm"
+version = "0.1.0"
+description = "SMART LLM: Smart Memory & Architecture-aware Retrieval Tool for LLM Agents"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "Advanced Agentic Coding Team" }]
+
+dependencies = [
+    "networkx>=3.0",
+    "tree-sitter>=0.23.0",
+    "tree-sitter-python",
+    "tree-sitter-typescript",
+    "tree-sitter-javascript",
+    "tree-sitter-go",
+    "tree-sitter-rust",
+    "tree-sitter-java",
+    "rank_bm25>=0.2.2",
+    "numpy>=1.24.0",
+    "pyyaml>=6.0",
+    "watchdog>=3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "google-genai",
+    "openai",
+]
+
+[project.scripts]
+smart-llm = "smart_llm.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
