@@ -344,9 +344,22 @@ def handle_dashboard(args):
 
 
 def handle_widget(args):
-    """Command handler for 'widget' (Starts the floating Tkinter macOS desktop widget)."""
+    """Command handler for 'widget' (Starts the native macOS floating desktop widget)."""
     workspace = Path(args.workspace).resolve()
     print(f"🧠 [SMART LLM] Initializing Native macOS Desktop Widget...")
+    
+    swift_bin = workspace / "smart-llm-out" / "SMART_LLM_Widget"
+    if swift_bin.exists():
+        import subprocess
+        print(f"🍏 Starting Apple-recommended Native Cocoa Widget App...")
+        try:
+            # Run the compiled native Swift app in background
+            subprocess.Popen([str(swift_bin)])
+            print("🚀 Native macOS Widget is now running on your desktop. Drag it anywhere!")
+            return
+        except Exception as e:
+            print(f"⚠️ Failed to launch native Swift binary: {e}. Falling back to Tkinter...")
+            
     print(f"💡 Double-click the widget to close it safely. Drag it anywhere!")
     from smart_llm.widget_app import start_widget_app
     try:
