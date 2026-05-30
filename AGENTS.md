@@ -61,7 +61,7 @@
 - *No high-level cross-module couplings detected.*
 
 ### ⚡ Proactive Memory Cache (0ms Pre-fetched Context)
-*에이전트가 현재 `src/smart_llm/widget_app.py` 파일 부근에서 작업 중임을 감지하여, 결합도가 높은 다음 컴포넌트를 선제 로드했습니다.*
+*에이전트가 현재 `AGENTS.md` 파일 부근에서 작업 중임을 감지하여, 결합도가 높은 다음 컴포넌트를 선제 로드했습니다.*
 
 #### 🔍 Predicted Target: `/Users/bongpark/.gemini/antigravity/scratch/smart-llm/setup.py` (Coupling Score: 0.0)
 *(상세 아키텍처 개요는 위키 커뮤니티 문서를 참고하십시오)*

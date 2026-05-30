@@ -67,7 +67,7 @@ class SmartLLMDesktopWidget:
         
         self.txt_label = self.canvas.create_text(
             18, 110, text="지식 모듈 축적됨", anchor="w",
-            fill="#8f9bb3", font=("Inter", 10, "medium")
+            fill="#8f9bb3", font=("Inter", 10, "normal")
         )
         
         # Footer
