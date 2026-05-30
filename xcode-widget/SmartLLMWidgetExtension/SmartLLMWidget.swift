@@ -3,16 +3,25 @@ import SwiftUI
 import Foundation
 
 // MARK: - Configuration — 모든 데이터를 로컬 파일에서 직접 읽음 (서버 불필요)
+// ⚠️ 샌드박스 환경에서 ~(tilde)는 컨테이너 경로로 리다이렉트됨.
+//    getpwuid()로 실제 홈 디렉토리(/Users/username)를 얻어야 함.
+import Darwin
+
 private enum Config {
-    static let workspacePath: String = {
-        NSString(string: "~/.gemini/antigravity/scratch/smart-llm").expandingTildeInPath
+    static let realHome: String = {
+        if let pw = getpwuid(getuid()), let dir = pw.pointee.pw_dir {
+            return String(cString: dir)
+        }
+        return "/Users/\(NSUserName())"
     }()
+    static let workspacePath: String = realHome + "/.gemini/antigravity/scratch/smart-llm"
     static var lessonsDir: String { workspacePath + "/lessons" }
     static var indexPath: String { workspacePath + "/smart-llm-out/index.json" }
     static var graphPath: String { workspacePath + "/smart-llm-out/graph.json" }
     static var lastSeenPath: String { workspacePath + "/.widget_last_seen" }
     static var agentsPath: String { workspacePath + "/AGENTS.md" }
 }
+
 
 // MARK: - Lesson Model
 struct LessonInfo: Identifiable, Codable {
