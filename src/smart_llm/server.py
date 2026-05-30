@@ -85,6 +85,16 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.wfile.write(dashboard_html.encode("utf-8"))
             return
 
+        # 5. GUI: Serve Embedded Native macOS-style Widget HTML
+        elif path == "/widget":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            
+            widget_html = get_widget_html()
+            self.wfile.write(widget_html.encode("utf-8"))
+            return
+
         # Catch-all
         self.send_response(404)
         self.end_headers()
@@ -859,6 +869,216 @@ def get_dashboard_html() -> str:
                 simulation.force("center", d3.forceCenter(width / 2, height / 2)).restart();
             }
         };
+    </script>
+</body>
+</html>
+"""
+
+def get_widget_html() -> str:
+    """Return the macOS-style semi-transparent glassmorphic desktop widget HTML page."""
+    return """<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMART LLM Widget</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --glow-green: #39ff14;
+            --glow-blue: #00d2ff;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: transparent;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Glassmorphic Widget Container */
+        .widget {
+            width: 170px;
+            height: 170px;
+            background: rgba(30, 35, 55, 0.45);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            color: #ffffff;
+            position: relative;
+        }
+
+        /* Ambient subtle inner glow */
+        .widget::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 28px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+        }
+
+        /* Pulsing green status LED */
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--glow-green);
+            box-shadow: 0 0 6px var(--glow-green);
+            animation: pulse 2s infinite alternate;
+        }
+
+        .main {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            z-index: 2;
+            margin-top: -6px;
+        }
+
+        .count {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 38px;
+            line-height: 1.0;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, #ffffff, var(--glow-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 210, 255, 0.15);
+        }
+
+        .label {
+            font-size: 10px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 2px;
+        }
+
+        .footer {
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .sync-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .sync-file {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 8px;
+            color: rgba(0, 210, 255, 0.7);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="widget">
+        <div class="header">
+            <div class="title">SMART LLM</div>
+            <div class="status-dot" id="led"></div>
+        </div>
+        <div class="main">
+            <div class="count" id="stat-count">0</div>
+            <div class="label">지식 모듈 축적됨</div>
+        </div>
+        <div class="footer">
+            <div class="sync-label">LATEST ACTIVE EVENT</div>
+            <div class="sync-file" id="stat-file">WAITING</div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchWidgetData() {
+            try {
+                const [graphRes, ledgerRes] = await Promise.all([
+                    fetch('/api/graph'),
+                    fetch('/api/ledger')
+                ]);
+
+                const graph = await graphRes.json();
+                const ledger = await ledgerRes.json();
+
+                // Calculate code nodes count
+                const nodes = graph.nodes || [];
+                const codeNodes = nodes.filter(n => n.file_type === 'code').length;
+                document.getElementById("stat-count").textContent = codeNodes;
+
+                // Set latest file from alerts
+                const alerts = ledger.alerts || [];
+                if (alerts.length > 0) {
+                    const latest = alerts[0];
+                    const filename = latest.details.file || "UPDATED";
+                    const shortName = filename.split('/').pop();
+                    document.getElementById("stat-file").textContent = shortName.toUpperCase();
+                    
+                    // Brief flash animation on LED when sync happens
+                    const led = document.getElementById("led");
+                    led.style.boxShadow = "0 0 12px #39ff14";
+                    setTimeout(() => {
+                        led.style.boxShadow = "0 0 6px #39ff14";
+                    }, 500);
+                } else {
+                    document.getElementById("stat-file").textContent = "STABLE";
+                }
+            } catch (err) {
+                console.error("Widget data fetch failed:", err);
+            }
+        }
+
+        fetchWidgetData();
+        setInterval(fetchWidgetData, 2000); // Poll every 2 seconds for high responsiveness!
     </script>
 </body>
 </html>
